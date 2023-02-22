@@ -1,12 +1,15 @@
 const std = @import("std");
 
 const allocator = std.heap.page_allocator;
+
 pub fn main() !void {
+    const stdout = std.io.getStdOut();
+    const stderr = std.io.getStdErr();
     const args = (try std.process.argsAlloc(allocator))[1..];
     var dest: Mode = undefined;
     var target: u8 = undefined;
     if (args.len < 2) {
-        std.debug.print("引数が足りません", .{});
+        _ = try stderr.write("引数が足りません");
         std.os.exit(0);
         unreachable;
     }
@@ -23,20 +26,23 @@ pub fn main() !void {
                     'd' => Mode.Dec,
                     'x' => Mode.Hex,
                     else => {
-                        std.debug.print("変換先指定が無効です", .{});
+                        _ = try stderr.write("変換先指定が無効です");
                         std.os.exit(0);
                         unreachable;
                     },
                 };
             },
             1 => {
-                target = stringToInt(arg);
+                target = stringToInt(arg) catch {
+                    _ = try stderr.write("10進数で入力してください");
+                    std.os.exit(0);
+                    unreachable;
+                };
             },
             else => {},
         }
     }
 
-    const stdout = std.io.getStdOut();
     switch (dest) {
         Mode.Bin => {
             try std.fmt.format(stdout.writer(), "{b}", .{target});
@@ -56,9 +62,16 @@ const Mode = enum {
     Hex,
 };
 
-fn stringToInt(str: []const u8) u8 {
+const Error = error{
+    InputError,
+};
+
+fn stringToInt(str: []const u8) !u8 {
     var int: u8 = 0;
     for (str) |c, i| {
+        if (c < 0x30 or 0x39 < c) {
+            return Error.InputError;
+        }
         int += (c - 0x30) * std.math.pow(u8, 10, @intCast(u8, i + 1));
     }
     return int;
