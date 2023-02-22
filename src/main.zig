@@ -78,5 +78,9 @@ fn stringToInt(str: []const u8) !u8 {
 }
 
 test "string to numeric" {
-    try std.testing.expect(stringToInt("10") == 10);
+    try std.testing.expect(try stringToInt("10") == 10);
+}
+
+test "input range check" {
+    try std.testing.expect(stringToInt("TEST") == Error.InputError);
 }
