@@ -21,16 +21,30 @@ pub fn main() !void {
                     std.os.exit(1);
                     unreachable;
                 }
-                dest = switch (arg[1]) {
-                    'b' => Mode.Bin,
-                    'd' => Mode.Dec,
-                    'x' => Mode.Hex,
-                    else => {
-                        _ = try stderr.write("変換先指定が無効です");
+                if (arg[0] != '-') {
+                    dest = Mode.All;
+                    target = stringToInt(arg) catch {
+                        _ = try stderr.write("10進数で入力してください");
                         std.os.exit(0);
                         unreachable;
-                    },
-                };
+                    };
+                } else {
+                    if (args.len < 2) {
+                        _ = try stderr.write("引数が足りません");
+                        std.os.exit(0);
+                        unreachable;
+                    }
+                    dest = switch (arg[1]) {
+                        'b' => Mode.Bin,
+                        'd' => Mode.Dec,
+                        'x' => Mode.Hex,
+                        else => {
+                            _ = try stderr.write("変換先指定が無効です");
+                            std.os.exit(0);
+                            unreachable;
+                        },
+                    };
+                }
             },
             1 => {
                 target = stringToInt(arg) catch {
@@ -53,6 +67,11 @@ pub fn main() !void {
         Mode.Hex => {
             try std.fmt.format(stdout.writer(), "{X}", .{target});
         },
+        Mode.All => {
+            try std.fmt.format(stdout.writer(), "{b}\n", .{target});
+            try std.fmt.format(stdout.writer(), "{d}\n", .{target});
+            try std.fmt.format(stdout.writer(), "{X}\n", .{target});
+        },
     }
 }
 
@@ -60,6 +79,7 @@ const Mode = enum {
     Bin,
     Dec,
     Hex,
+    All,
 };
 
 const Error = error{
@@ -79,6 +99,7 @@ fn stringToInt(str: []const u8) !u8 {
 
 test "string to numeric" {
     try std.testing.expect(try stringToInt("10") == 10);
+    try std.testing.expect(try stringToInt("128") == 128);
 }
 
 test "input range check" {
